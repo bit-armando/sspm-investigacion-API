@@ -1,31 +1,30 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
-class Vehiculo_detenido(BaseModel):
+class Vehiculo(BaseModel):
     nombre: str
-    placas: str
+    placa: str
     serie: str
     distrito: int
     
 
-class Persona_bitacora(BaseModel):
-    # persona_id = Column(Integer, primary_key=True)
+class Persona(BaseModel):
     nombres: str
     primer_apellido: str
     segundo_apellido: str
     calle: str
     no_interior: str | None
     no_exterior: str | None
-    edad: int
-    # fecha_nacimiento = Column(DateTime, default=)
+    fecha_nacimiento: datetime
     colonia: str | None
     cp: int
-    cve_sexo: int
-    cve_gpo_criminal: int | None
-    cve_pandilla: int | None
-    cve_rango: int | None
     nombre_madre: str | None
     nombre_padre: str | None
+    
+    @property
+    def fecha_nacimiento(self) -> str:
+        return self.fecha_nacimiento.strftime('%Y-%m-%d')
     
     class Config:
         orm_mode = True
