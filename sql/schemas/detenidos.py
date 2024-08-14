@@ -9,10 +9,16 @@ class Vehiculo(BaseModel):
     distrito: int
     
 
+class Foto(BaseModel):
+    persona_id: int
+    img: bytes
+    
+
 class Persona(BaseModel):
     nombres: str
     primer_apellido: str
     segundo_apellido: str
+    # foto: Foto
     calle: str
     no_interior: str | None
     no_exterior: str | None

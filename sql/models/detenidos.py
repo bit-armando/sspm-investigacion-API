@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, LargeBinary
 # from sqlalchemy.orm import relationship
 
 from sql.databases.detenidos import Base
@@ -33,4 +33,9 @@ class Persona(Base):
     nombre_madre = Column(String(150))
     nombre_padre = Column(String(150))
 
+
+class Foto(Base):
+    __tablename__ = 'FOTOS_BLOBS_DVD'
     
+    persona_id = Column(Integer, primary_key=True)
+    img = Column('FOTO_IMAG', LargeBinary)

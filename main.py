@@ -1,5 +1,8 @@
 from fastapi import Depends, FastAPI
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+
+import base64
 
 from sql.schemas import detenidos as schemas
 from sql.models import detenidos as models
@@ -34,3 +37,17 @@ def read_vehiculo(placa: str, db: Session = Depends(get_db)):
 @app.get("/vehiculo/serie/{serie}", response_model=schemas.Vehiculo)
 def read_vehiculo(serie: str, db: Session = Depends(get_db)):
     return db.query(models.Vehiculos_detenidos).filter(models.Vehiculos_detenidos.serie == serie).first()
+
+
+@app.get("/foto/{id}")
+def read_foto(id: int, db: Session = Depends(get_db)):
+    image =  db.query(models.Foto).get(id)
+    encodingString = base64.b64encode(image.img).decode('utf-8')
+    html_content = """
+    <html>
+        <body>
+            <img src="data:image/png;base64,{}">
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content.format(encodingString))
