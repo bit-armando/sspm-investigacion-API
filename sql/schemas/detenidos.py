@@ -11,14 +11,13 @@ class Vehiculo(BaseModel):
 
 class Foto(BaseModel):
     persona_id: int
-    img: bytes
+    img: str
     
 
 class Persona(BaseModel):
     nombres: str
     primer_apellido: str
     segundo_apellido: str
-    # foto: Foto
     calle: str
     no_interior: str | None
     no_exterior: str | None
@@ -27,10 +26,39 @@ class Persona(BaseModel):
     cp: int
     nombre_madre: str | None
     nombre_padre: str | None
-    
-    @property
-    def fecha_nacimiento(self) -> str:
-        return self.fecha_nacimiento.strftime('%Y-%m-%d')
+    # foto: Foto | None
     
     class Config:
-        orm_mode = True
+        from_atributes = True
+
+
+# class PersonaResponse(BaseModel):
+#     nombres: str
+#     primer_apellido: str
+#     segundo_apellido: str
+#     calle: str
+#     no_interior: str | None
+#     no_exterior: str | None
+#     fecha_nacimiento: datetime
+#     colonia: str | None
+#     cp: int
+#     nombre_madre: str | None
+#     nombre_padre: str | None
+#     foto: str | None
+    
+#     @classmethod
+#     def from_persona(cls, persona: Persona):
+#         return cls(
+#             nombres=persona.nombres,
+#             primer_apellido=persona.primer_apellido,
+#             segundo_apellido=persona.segundo_apellido,
+#             calle=persona.calle,
+#             no_interior=persona.no_interior,
+#             no_exterior=persona.no_exterior,
+#             fecha_nacimiento=persona.fecha_nacimiento,
+#             colonia=persona.colonia,
+#             cp=persona.cp,
+#             nombre_madre=persona.nombre_madre,
+#             nombre_padre=persona.nombre_padre,
+#             foto=persona.foto.img
+#         )

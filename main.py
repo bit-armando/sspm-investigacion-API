@@ -26,7 +26,8 @@ def get_db():
 
 @app.get("/detenido/{id}", response_model=schemas.Persona)
 def read_user(id: int, db: Session = Depends(get_db)):
-   return db.query(models.Persona).filter(models.Persona.persona_id == id).first()
+   persona = db.query(models.Persona).filter(models.Persona.persona_id == id).first()
+   return persona
 
 
 @app.get("/vehiculo/placa/{placa}", response_model=schemas.Vehiculo)
@@ -41,8 +42,9 @@ def read_vehiculo(serie: str, db: Session = Depends(get_db)):
 
 @app.get("/foto/{id}")
 def read_foto(id: int, db: Session = Depends(get_db)):
-    image =  db.query(models.Foto).get(id)
+    image =  db.query(models.Foto).filter(models.Foto.persona_id == id).first()
     encodingString = base64.b64encode(image.img).decode('utf-8')
+    # return {"img": str(type(encodingString))}
     html_content = """
     <html>
         <body>
@@ -51,3 +53,8 @@ def read_foto(id: int, db: Session = Depends(get_db)):
     </html>
     """
     return HTMLResponse(content=html_content.format(encodingString))
+    
+
+@app.get("/delitos/{id}")
+def read_delitos(id: int, db: Session = Depends(get_db)):
+    return db.query(models.DelitoCometido).filter(models.DelitoCometido.persona_id == id).all()

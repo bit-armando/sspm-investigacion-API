@@ -1,20 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, LargeBinary
-# from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime, LargeBinary, ForeignKey
+from sqlalchemy.orm import relationship
 
 from sql.databases.detenidos import Base
-
-
-class Vehiculos_detenidos(Base):
-    __tablename__ = 'VEHICULOS_DET'
     
-    vehiculo_id = Column(Integer, primary_key=True)
-    persona_id = Column(Integer)
-    nombre = Column('nombre_quienasegura', String(200))
-    placa = Column('numero_placas', String(30))
-    serie = Column('numero_serie', String(20))
-    distrito = Column('cve_distrito', Integer)
-    
-
 
 class Persona(Base):
     __tablename__ = 'PERSONAS_MST'
@@ -32,10 +20,33 @@ class Persona(Base):
     cve_sexo = Column(Integer)
     nombre_madre = Column(String(150))
     nombre_padre = Column(String(150))
-
+    
 
 class Foto(Base):
     __tablename__ = 'FOTOS_BLOBS_DVD'
     
-    persona_id = Column(Integer, primary_key=True)
+    foto_id = Column('FOTO_ID', Integer, primary_key=True)
+    persona_id = Column(Integer)
     img = Column('FOTO_IMAG', LargeBinary)
+        
+
+class DelitoCometido(Base):
+    __tablename__ = 'DELITOS_COMETIDOS'
+    
+    id = Column('DELITO_COMETIDO_ID', Integer, primary_key=True)
+    persona_id = Column('PERSONA_ID', Integer, ForeignKey('PERSONAS_MST.persona_id'))
+    descripcion = Column('DESCRIPCION_HECHOS', String(1500))
+    fecha = Column('FEHORA_REGISTRO', DateTime)
+    
+    persona = relationship('Persona')
+    
+
+class Vehiculos_detenidos(Base):
+    __tablename__ = 'VEHICULOS_DET'
+    
+    vehiculo_id = Column(Integer, primary_key=True)
+    persona_id = Column(Integer)
+    nombre = Column('nombre_quienasegura', String(200))
+    placa = Column('numero_placas', String(30))
+    serie = Column('numero_serie', String(20))
+    distrito = Column('cve_distrito', Integer)
