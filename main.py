@@ -1,60 +1,73 @@
-from fastapi import Depends, FastAPI
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
-import base64
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
-from sql.schemas import detenidos as schemas
-from sql.models import detenidos as models
-from sql.databases.detenidos import SessionLocal, engine
+from sql.databases.detenidos import engine
 from sql.models import detenidos
+from routes.detenido import router as detenido_router
 
 
 detenidos.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.add_route(detenido_router)
 
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def myFirstPage(canvas, doc):
+    page_width, page_height = letter
+    
+    canvas.saveState()
+    canvas.drawImage("LOGO.png", 60, 650, width=200, height=100)
+    canvas.setFont('Helvetica-Bold', 8)
+    departamentos = [
+        'SECRETARÍA DE SEGURIDAD PÚBLICA MUNICIPAL',
+        'DIRECCIÓN DE ASUNTOS JURÍDICOS',
+        'COORDINACIÓN DE PUESTAS A DISPOSICIÓN'
+    ]
+    y_position = 730
+    for line in departamentos:
+        text_width = canvas.stringWidth(line, 'Helvetica-Bold', 8)
+        x_position = page_width - 50 - text_width
+        canvas.drawString(x_position, y_position, line) 
+        y_position -= 10
+    canvas.restoreState()
 
 
-@app.get("/detenido/{id}", response_model=schemas.Persona)
-def read_user(id: int, db: Session = Depends(get_db)):
-   persona = db.query(models.Persona).filter(models.Persona.persona_id == id).first()
-   return persona
+def generar_pdf(ruta):
+    doc = SimpleDocTemplate(ruta, pagesize=letter)
 
+    # Estilos predefinidos
+    estilos = getSampleStyleSheet()
+    story = [Spacer(1,70)]
 
-@app.get("/vehiculo/placa/{placa}", response_model=schemas.Vehiculo)
-def read_vehiculo(placa: str, db: Session = Depends(get_db)):
-    return db.query(models.Vehiculos_detenidos).filter(models.Vehiculos_detenidos.placa == placa).first()
-
-
-@app.get("/vehiculo/serie/{serie}", response_model=schemas.Vehiculo)
-def read_vehiculo(serie: str, db: Session = Depends(get_db)):
-    return db.query(models.Vehiculos_detenidos).filter(models.Vehiculos_detenidos.serie == serie).first()
-
-
-@app.get("/foto/{id}")
-def read_foto(id: int, db: Session = Depends(get_db)):
-    image =  db.query(models.Foto).filter(models.Foto.persona_id == id).first()
-    encodingString = base64.b64encode(image.img).decode('utf-8')
-    # return {"img": str(type(encodingString))}
-    html_content = """
-    <html>
-        <body>
-            <img src="data:image/png;base64,{}">
-        </body>
-    </html>
+    # story.append(Paragraph(f"FOLIO: {'EDITAR'}" , estilos['Heading5']))
+    texto = 'EDITAR'
+    html_text = f"""
+        <b>FOLIO: </b><span> {texto} </span>
+        <br/><br/>
+        <b>ELABORÓ: </b><span> {texto} </span>
+        <br/><br/>
+        <b>UNIDAD: </b><span> {texto} </span>
+        <b>SECTOR: </b><span> {texto} </span>
+        <b>DEPARTAMENTO: </b><span> {texto} </span>
+        <b>NUM. REMISION</b>
+        <br>
+        
     """
-    return HTMLResponse(content=html_content.format(encodingString))
+    story.append(Paragraph(html_text, estilos['Normal']))
+    
     
 
-@app.get("/delitos/{id}")
-def read_delitos(id: int, db: Session = Depends(get_db)):
-    return db.query(models.DelitoCometido).filter(models.DelitoCometido.persona_id == id).all()
+    # Generar el PDF con los story añadidos
+    doc.build(story, onFirstPage=myFirstPage)
+
+
+@app.get("/ver")
+def ver_pdf():
+    ruta_pdf = 'reporte.pdf'
+    generar_pdf(ruta_pdf)
+    
+    return FileResponse(ruta_pdf, media_type='application/pdf')
