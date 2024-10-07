@@ -1,138 +1,98 @@
 import json
+import jinja2
+import pdfkit
 from datetime import datetime
-
 from sqlalchemy import text
-
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, TableStyle, Table
 
 from sql.databases.detenidos import engine
 
 
-def salto_linea(text:str):
-    return text.replace('\n', '<br/><br/>')
+def salto_linea(texto:str):
+    """
+    Remplaza todos los saltos de carro \n de un texto por dos etiquetas html <br/> para que pueda hacer los saltos de linea en un documento pdf
+    :param texto: Texto original
+    :return: Texto modificado con los <br/>
+    """
+    return texto.replace('\n', '<br/><br/>')
 
 
 def load_json(path:str) -> dict:
-    with open(f'remisiones/{path}.json', 'r') as f:
+    """
+    Lee un documento Json
+    :param path: Nombre del archivo sin la extencion
+    :return: dict con la informacion del fichero json
+    """
+    with open(path, 'r') as f:
         data = json.load(f)
     return data
 
 
 def convert_json(data):
     for registro in data:
-        print(data[registro])
         try:
-            with open(f'/remisiones/{registro}.json', 'w') as f:
+            with open(f'remisiones/{registro}.json', 'w') as f:
                 json.dump(data[registro], f, indent=4)
         except:
             pass
 
 
 def to_day() -> str:
+    """
+    Toma la fecha del dia actual
+    :return: str en el formato YYYY/MM/DD
+    """
     date = datetime.today()
     date = f'{date.year}/{date.month}/{date.day}'
     return date
 
 
-def search_news(date: str):
-    datos = {}
+def search_news():
+    with open('remisiones/__date__.txt', 'r') as f:
+        query_date = f.read()
+
+    with open('remisiones/__date__.txt', 'w') as f:
+        f.write(to_day())
 
     with engine.connect() as conn:
         result = conn.execute(text(
-            f"""
+                f"""
                 select json from actuaciones_det
                 where id_actuacion_cat = 12
-                and fecha >= to_date('{to_day()}', 'YYYY/MM/DD')
+                and fecha >= to_date('{query_date}', 'YYYY/MM/DD')
             """
         ))
 
-        for i in result:
-            datos_str = i.json.decode('utf-8')
-            aux = json.loads(datos_str)
+    datos = {}
+    for registro in result:
+        datos_str = registro.json.decode('utf-8')
+        aux = json.loads(datos_str)
 
-            try:
-                id = aux['detenidos'][0]['numRemision']
-                datos[id] = aux
-            except:
-                pass
+        try:
+            id = aux['detenidos'][0]['numRemision']
+            datos[id] = aux
+        except:
+            pass
 
     convert_json(datos)
 
 
+def crea_pdf(ruta_template, info, rutacss=''):
+    nombre_template = ruta_template.split('/')[-1]
+    ruta_template = ruta_template.replace(nombre_template, '')
 
-def myFirstPage(canvas, doc):
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(ruta_template))
+    template = env.get_template(nombre_template)
+    html = template.render(info)
 
-    page_width, page_height = letter
+    options = {
+        'page-size': 'Letter',
+        'margin-top': '0.75in',
+        'margin-bottom': '0.75in',
+        'margin-left': '0.75in',
+        'margin-right': '0.75in',
+        'encoding': 'utf-8',
+    }
 
-    canvas.saveState()
-    canvas.drawImage('assets/LOGO.png', 60, 650, width=200, height=100)
-    canvas.setFont('Helvetica-Bold', 8)
-    departamentos = [
-        'SECRETARÍA DE SEGURIDAD PÚBLICA MUNICIPAL',
-        'DIRECCIÓN DE ASUNTOS JURÍDICOS',
-        'COORDINACIÓN DE PUESTAS A DISPOSICIÓN',
-    ]
-    y_position = 730
-    for line in departamentos:
-        text_width = canvas.stringWidth(line, 'Helvetica-Bold', 8)
-        x_position = page_width - 50 - text_width
-        canvas.drawString(x_position, y_position, line)
-        y_position -= 10
-
-
-    canvas.drawString(60, 620, 'ELABORÓ:')  # -- FECHA ALINEADA
-    canvas.drawString(60, 600, 'UNIDAD:')
-    canvas.drawString(180, 600, 'SECTOR:')
-    canvas.drawString(300, 600, 'DEPARTAMENTO:')
-
-    canvas.drawString(60, 580, 'REMISIÓN:')
-    canvas.drawString(60, 570, 'CLASIFICACIÓN:')
-
-    canvas.drawString(60, 550, 'I. LUGAR DE LOS HECHOS:')
-    canvas.drawString(60, 500, 'II. INFRACTOR (ES):')
-
-    canvas.restoreState()
-
-
-def generar_pdf(ruta, remision):
-    contenido = load_json(remision)
-    doc = SimpleDocTemplate(ruta, pagesize=letter)
-
-    styles = getSampleStyleSheet()
-    normal = ParagraphStyle(name='normal', parent=styles['Normal'],
-                            fontName='Helvetica', fontSize=8,
-                            leftIndent=-18, rightIndent=-18, spaceBefore=-10)
-
-    resaltado = ParagraphStyle(name='resaltado', parent=styles['Normal'],
-                               fontName='Helvetica-Bold', fontSize=8,
-                               leftIndent=-18)
-    styles.alignment = 'justify'
-    styles.add(normal)
-    styles.add(resaltado)
-
-    detenidos = [["NOMBRE", "SEXO", "EDAD", "DOMICILIO"]]
-
-    for detenido in contenido['detenidos']:
-        aux = [
-            detenido['nombre'],
-            detenido['sexo'],
-            detenido['edad'],
-            detenido['domicilio']
-        ]
-        detenidos.append(aux)
-
-    table = Table(detenidos)
-    table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),  # Fuente
-        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Tamaño de fuente
-    ]))
-
-    story = [Spacer(1, 220)]
-    story.append(table)
-    story.append(Paragraph("III. HECHOS:", resaltado))
-    story.append(Paragraph(salto_linea(contenido['hechos'])))
-
-    doc.build(story, onFirstPage=myFirstPage)
+    # config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+    ruta_salida ='test.pdf'
+    pdfkit.from_string(html, ruta_salida, css=rutacss, options=options)

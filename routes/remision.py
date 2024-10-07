@@ -1,8 +1,10 @@
+import base64
+
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from starlette.responses import JSONResponse
 
-from routes.utils.remision import generar_pdf
+from routes.utils.remision import crea_pdf, search_news, load_json, salto_linea
 
 router = APIRouter(
     prefix='/remision',
@@ -11,11 +13,22 @@ router = APIRouter(
 
 @router.get("/ver/{id}")
 def ver_pdf(id: str):
-    ruta_pdf = 'reporte.pdf'
+    with open("assets/documentos/LOGO.png", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
+    data = load_json(f'remisiones/'+id+'.json')
+    data['hechos'] = salto_linea(data['hechos'])
+    data['logo'] = encoded_string
+
+    ruta_template = 'assets/documentos/remision.html'
+    ruta_css = 'assets/documentos/remision.css'
     try:
-        generar_pdf(ruta_pdf, id)
-        return FileResponse(ruta_pdf, media_type='application/pdf')
+        crea_pdf(ruta_template, data, ruta_css)
+        return FileResponse('test.pdf', media_type='application/pdf')
     except:
-
-        return JSONResponse({'error': 'Remision no encontrada'}, status_code=500)
+        try:
+            search_news()
+            crea_pdf(ruta_template, data, ruta_css)
+            return FileResponse('test.pdf', media_type='application/pdf')
+        except:
+            return JSONResponse({'error': 'Remision no encontrada'}, status_code=500)
