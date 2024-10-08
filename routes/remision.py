@@ -22,14 +22,17 @@ def ver_pdf(id: str):
         data = load_json(f'remisiones/' + id + '.json')
         data['hechos'] = salto_linea(data['hechos'])
         data['logo'] = encoded_string
+
         crea_pdf(ruta_template, data, ruta_css)
         return FileResponse('test.pdf', media_type='application/pdf')
     except:
         try:
             search_news()
+
             data = load_json(f'remisiones/' + id + '.json')
             data['hechos'] = salto_linea(data['hechos'])
             data['logo'] = encoded_string
+
             crea_pdf(ruta_template, data, ruta_css)
             return FileResponse('test.pdf', media_type='application/pdf')
         except:
