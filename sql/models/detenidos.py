@@ -3,6 +3,16 @@ from sqlalchemy.orm import relationship
 
 from sql.databases.detenidos import Base
     
+class Usuario(Base):
+    __tablename__ = 'USUARIOS_API'
+
+    nombres = Column(String)
+    primer_apellido = Column(String)
+    username = Column(String, primary_key=True)
+    password = Column(String)
+    estatus = Column(Integer)
+    token = Column(String)
+
 
 class Persona(Base):
     __tablename__ = 'PERSONAS_MST'

@@ -1,15 +1,25 @@
-import base64
-
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from starlette.responses import JSONResponse
+from fastapi import Depends
 
+from sqlalchemy.orm import Session
+import base64
+
+from depends.database import get_db
+from sql.models.detenidos import Usuario as model_user
 from routes.utils.remision import crea_pdf, search_news, load_json, salto_linea
 
 router = APIRouter(
     prefix='/remision',
     tags=['remision'],
 )
+
+
+@router.get('/user/{id}')
+def get_user(id: str, db: Session = Depends(get_db)):
+    user = db.query(model_user).filter(model_user.username == id).first()
+    return user
 
 @router.get("/ver/{id}")
 def ver_pdf(id: str):

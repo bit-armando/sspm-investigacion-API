@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
+class Usuario(BaseModel):
+    nombres: Optional[str]
+    primer_apellido: Optional[str]
+    estatus: Optional[int]
+    token: Optional[str]
+    username: str
+    password: str
 
 class Vehiculo(BaseModel):
     nombre: str
